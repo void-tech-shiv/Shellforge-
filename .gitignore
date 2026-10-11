@@ -1,0 +1,5 @@
+shellforge
+*.o
+*.out
+*.log
+.DS_Store
