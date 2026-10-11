@@ -5,19 +5,55 @@ BIN="./shellforge"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-out=$(printf 'print hello\nquit 0\n' | "$BIN")
-[[ "$out" == *"hello"* ]]
+out="$($BIN <<'CMDS'
+print hello
+path
+print $?
+quit
+CMDS
+)"
 
-out=$(printf 'list / | first -n 1\nquit 0\n' | "$BIN")
-[[ -n "$out" ]]
+grep -q '^hello$' <<<"$out"
+grep -q '^0$' <<<"$out"
 
-printf 'print ShellForge > %s/out.txt\nshow %s/out.txt\nquit 0\n' "$TMP" "$TMP" | "$BIN" > "$TMP/result.txt"
-grep -q 'ShellForge' "$TMP/result.txt"
+(
+  cd "$TMP"
+  "$OLDPWD/$BIN" <<'CMDS'
+make demo
+new note.txt
+print shellforge > note.txt
+show note.txt
+list
+quit
+CMDS
+) > "$TMP/out.txt"
 
-out=$(printf 'export DEMO=works\nprint $DEMO\nquit 0\n' | "$BIN")
-[[ "$out" == *"works"* ]]
+test -d "$TMP/demo"
+test -f "$TMP/note.txt"
+grep -q 'shellforge' "$TMP/out.txt"
+grep -q 'note.txt' "$TMP/out.txt"
 
-out=$(printf 'false\nprint $?\nquit 0\n' | "$BIN")
-[[ "$out" == *"1"* ]]
+pipe_out="$($BIN <<'CMDS'
+print alpha | tr a-z A-Z
+quit
+CMDS
+)"
+grep -q '^ALPHA$' <<<"$pipe_out"
 
-echo "All ShellForge tests passed."
+$BIN <<CMDS >/dev/null
+print error-test > "$TMP/combined.txt" 2>&1
+quit
+CMDS
+grep -q 'error-test' "$TMP/combined.txt"
+
+job_out="$($BIN <<'CMDS'
+sleep 0.2 &
+tasks
+sleep 0.3
+tasks
+quit
+CMDS
+)"
+grep -q 'Running' <<<"$job_out"
+
+echo "All ShellForge smoke tests passed."

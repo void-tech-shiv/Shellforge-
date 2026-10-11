@@ -1,5 +1,3 @@
 shellforge
-*.o
-*.out
+src/*.o
 *.log
-.DS_Store
